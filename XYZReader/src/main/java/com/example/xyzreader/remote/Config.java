@@ -9,6 +9,7 @@ public class Config {
     static {
         URL url = null;
         try {
+            //Changed https to http, otherwise images will not load from Dropbox
             url = new URL("https://dl.dropboxusercontent.com/u/231329/xyzreader_data/data.json" );
         } catch (MalformedURLException ignored) {
             // TODO: throw a real error

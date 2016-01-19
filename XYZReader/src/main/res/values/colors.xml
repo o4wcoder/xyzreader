@@ -16,10 +16,19 @@
 -->
 
 <resources>
+
+    <color name="materialBlueGrey700DarkPrimary">#455A64</color>
+    <color name="materialBlueGrey500Primary">#607D8B</color>
+    <color name="materialPrimaryText">#212121</color>
+    <color name="materialSecondaryText">#727272</color>
+
+    <!-- Accent Colors -->
+    <color name="materialLightBlueAccent">#03A9F4</color>
+
     <color name="photo_placeholder">#ccc</color>
 
-    <color name="theme_primary">#04561A</color>
-    <color name="theme_primary_dark">#04561A</color>
-    <color name="theme_accent">#04561A</color>
+    <color name="theme_primary">@color/materialBlueGrey500Primary</color>
+    <color name="theme_primary_dark">@color/materialBlueGrey700DarkPrimary</color>
+    <color name="theme_accent">@color/materialLightBlueAccent</color>
     <color name="ltgray">#ffe0e0e0</color>
 </resources>
