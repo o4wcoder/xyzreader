@@ -1,29 +1,40 @@
 package com.example.xyzreader.ui;
 
+import android.annotation.TargetApi;
+import android.app.ActivityOptions;
 import android.app.LoaderManager;
+import android.app.SharedElementCallback;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
+import com.squareup.picasso.Picasso;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * An activity representing a list of Articles. This activity has different presentations for
@@ -31,12 +42,25 @@ import com.example.xyzreader.data.UpdaterService;
  * touched, lead to a {@link ArticleDetailActivity} representing item details. On tablets, the
  * activity presents a grid of items as cards.
  */
+
+
 public class ArticleListActivity extends ActionBarActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
+
+    private static final String TAG = ArticleListActivity.class.getSimpleName();
+
+    static final String EXTRA_STARTING_IMAGE_POSITION = "com.example.xyzreader.ui.extra_starting_image_position";
+    static final String EXTRA_CURRENT_IMAGE_POSITION = "com.example.xyzreader.ui.extra_current_image_position";
 
     private Toolbar mToolbar;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
+
+    //Used for Shared Element Transitions
+    private SharedElementCallback mSharedElementCallback;
+    private Bundle mTmpReenterState;
+    private boolean mIsDetailsActivityStarted;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +79,29 @@ public class ArticleListActivity extends ActionBarActivity implements
 
         if (savedInstanceState == null) {
             refresh();
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mSharedElementCallback = new SharedElementCallback() {
+                @Override
+                public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+                    Log.e(TAG,"Inside onMapSharedElements()");
+                    if(mTmpReenterState != null) {
+
+                        int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
+                        int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
+
+                        if(startingPosition != currentPosition) {
+                            //Position has changed after swiping the PageView
+                        }
+
+                        mTmpReenterState = null;
+                    }
+                    else {
+
+                    }
+                }
+            };
         }
     }
 
@@ -98,7 +145,7 @@ public class ArticleListActivity extends ActionBarActivity implements
 
     @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-        Adapter adapter = new Adapter(cursor);
+        Adapter adapter = new Adapter(cursor,this);
         adapter.setHasStableIds(true);
         mRecyclerView.setAdapter(adapter);
         int columnCount = getResources().getInteger(R.integer.list_column_count);
@@ -114,9 +161,12 @@ public class ArticleListActivity extends ActionBarActivity implements
 
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
         private Cursor mCursor;
+        private Context mContext;
+        private int mImagePosition;
 
-        public Adapter(Cursor cursor) {
+        public Adapter(Cursor cursor, Context context) {
             mCursor = cursor;
+            mContext = context;
         }
 
         @Override
@@ -132,8 +182,19 @@ public class ArticleListActivity extends ActionBarActivity implements
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition()))));
+                    Intent intent = new Intent(Intent.ACTION_VIEW,
+                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition())));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                       intent.putExtra(EXTRA_STARTING_IMAGE_POSITION,mImagePosition);
+
+                        ActivityOptions options = ActivityOptions.
+                                makeSceneTransitionAnimation(ArticleListActivity.this, view.findViewById(R.id.thumbnail),
+                                        view.findViewById(R.id.thumbnail).getTransitionName());
+                        startActivity(intent, options.toBundle());
+                    } else {
+
+                        startActivity(intent);
+                    }
                 }
             });
             return vh;
@@ -153,6 +214,17 @@ public class ArticleListActivity extends ActionBarActivity implements
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
+
+
+            //Set title of image to be used in the shared transition
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+              Log.e(TAG, "Pos: " + position +
+                                " Article title: " + mCursor.getString(ArticleLoader.Query.TITLE));
+                holder.thumbnailView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
+                holder.thumbnailView.setTag(mCursor.getString(ArticleLoader.Query.TITLE));
+                mImagePosition = position;
+            }
+
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
         }
 
@@ -163,13 +235,15 @@ public class ArticleListActivity extends ActionBarActivity implements
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        public DynamicHeightNetworkImageView thumbnailView;
+       public DynamicHeightNetworkImageView thumbnailView;
+
         public TextView titleView;
         public TextView subtitleView;
 
         public ViewHolder(View view) {
             super(view);
             thumbnailView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
+
             titleView = (TextView) view.findViewById(R.id.article_title);
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
         }

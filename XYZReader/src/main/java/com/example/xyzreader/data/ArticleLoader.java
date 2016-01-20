@@ -30,6 +30,7 @@ public class ArticleLoader extends CursorLoader {
                 ItemsContract.Items.PHOTO_URL,
                 ItemsContract.Items.ASPECT_RATIO,
                 ItemsContract.Items.BODY,
+                ItemsContract.Items.SERVER_ID,
         };
 
         int _ID = 0;
@@ -40,5 +41,6 @@ public class ArticleLoader extends CursorLoader {
         int PHOTO_URL = 5;
         int ASPECT_RATIO = 6;
         int BODY = 7;
+        int SERVER_ID = 8;
     }
 }
