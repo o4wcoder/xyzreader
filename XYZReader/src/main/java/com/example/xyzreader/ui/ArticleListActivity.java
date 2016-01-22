@@ -182,10 +182,12 @@ public class ArticleListActivity extends ActionBarActivity implements
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+
+                    //Create intent to start ArticleDetailActivity sending in ID of view selected.
                     Intent intent = new Intent(Intent.ACTION_VIEW,
                             ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition())));
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                       intent.putExtra(EXTRA_STARTING_IMAGE_POSITION,mImagePosition);
+                      // intent.putExtra(EXTRA_STARTING_IMAGE_POSITION,mImagePosition);
 
                         ActivityOptions options = ActivityOptions.
                                 makeSceneTransitionAnimation(ArticleListActivity.this, view.findViewById(R.id.thumbnail),
@@ -223,6 +225,7 @@ public class ArticleListActivity extends ActionBarActivity implements
                 holder.thumbnailView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
                 holder.thumbnailView.setTag(mCursor.getString(ArticleLoader.Query.TITLE));
                 mImagePosition = position;
+                Log.e(TAG,"onBindViewHolder. Setting Image position: " + mImagePosition);
             }
 
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));

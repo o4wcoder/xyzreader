@@ -76,6 +76,7 @@ public class ArticleDetailFragment extends Fragment implements
 
         if (getArguments().containsKey(ARG_ITEM_ID)) {
             mItemId = getArguments().getLong(ARG_ITEM_ID);
+            Log.e(TAG,"ArticleDetailFragment onCreate: Item ID: " + mItemId);
         }
 
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);

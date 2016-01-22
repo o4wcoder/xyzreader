@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.v13.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,8 @@ import com.example.xyzreader.data.ItemsContract;
 public class ArticleDetailActivity extends ActionBarActivity
         implements LoaderManager.LoaderCallbacks<Cursor> {
 
+    private static final String TAG = ArticleDetailActivity.class.getSimpleName();
+
     private Cursor mCursor;
     private long mStartId;
 
@@ -38,6 +41,10 @@ public class ArticleDetailActivity extends ActionBarActivity
     private View mUpButtonContainer;
     private View mUpButton;
 
+    //Used for Shared Element Transitions
+    private int mCurrentPosition;
+    private int mStartingPosition;;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +56,17 @@ public class ArticleDetailActivity extends ActionBarActivity
         setContentView(R.layout.activity_article_detail);
 
         getLoaderManager().initLoader(0, null, this);
+
+        //Get position of shared element from tranistion
+        mStartingPosition = getIntent().getIntExtra(ArticleListActivity.EXTRA_STARTING_IMAGE_POSITION,0);
+
+        if(savedInstanceState == null) {
+            mCurrentPosition = mStartingPosition;
+        }
+        else {
+            mCurrentPosition = savedInstanceState.getInt(ArticleListActivity.EXTRA_CURRENT_IMAGE_POSITION);
+        }
+        Log.e(TAG, "ArticleDetailActivity onCreate: current position: " + mCurrentPosition);
 
         mPagerAdapter = new MyPagerAdapter(getFragmentManager());
         mPager = (ViewPager) findViewById(R.id.pager);
@@ -68,11 +86,14 @@ public class ArticleDetailActivity extends ActionBarActivity
 
             @Override
             public void onPageSelected(int position) {
+                Log.e(TAG,"Pager:onPageSelected position:" + position);
                 if (mCursor != null) {
                     mCursor.moveToPosition(position);
                 }
                 mSelectedItemId = mCursor.getLong(ArticleLoader.Query._ID);
                 updateUpButtonPosition();
+
+                mCurrentPosition = position;
             }
         });
 
@@ -102,6 +123,8 @@ public class ArticleDetailActivity extends ActionBarActivity
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getData() != null) {
                 mStartId = ItemsContract.Items.getItemId(getIntent().getData());
+                Log.e(TAG, "onCreate, getting saved instance start pos of " + mStartId);
+
                 mSelectedItemId = mStartId;
             }
         }
@@ -116,7 +139,7 @@ public class ArticleDetailActivity extends ActionBarActivity
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
         mCursor = cursor;
         mPagerAdapter.notifyDataSetChanged();
-
+        Log.e(TAG,"onLoadFinished()");
         // Select the start ID
         if (mStartId > 0) {
             mCursor.moveToFirst();
@@ -130,6 +153,9 @@ public class ArticleDetailActivity extends ActionBarActivity
                 mCursor.moveToNext();
             }
             mStartId = 0;
+
+            mCursor.moveToPosition((int)mSelectedItemId);
+            Log.e(TAG,"onCreate, geting title: " + mCursor.getString(ArticleLoader.Query.TITLE));
         }
     }
 
