@@ -1,6 +1,5 @@
 package com.example.xyzreader.ui;
 
-import android.annotation.TargetApi;
 import android.app.ActivityOptions;
 import android.app.LoaderManager;
 import android.app.SharedElementCallback;
@@ -13,6 +12,7 @@ import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
@@ -20,18 +20,16 @@ import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
+
+import android.support.v7.app.AppCompatActivity;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
-import com.squareup.picasso.Picasso;
 
 import java.util.List;
 import java.util.Map;
@@ -44,10 +42,10 @@ import java.util.Map;
  */
 
 
-public class ArticleListActivity extends ActionBarActivity implements
+public class ArticleMainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
-    private static final String TAG = ArticleListActivity.class.getSimpleName();
+    private static final String TAG = ArticleMainActivity.class.getSimpleName();
 
     static final String EXTRA_STARTING_IMAGE_POSITION = "com.example.xyzreader.ui.extra_starting_image_position";
     static final String EXTRA_CURRENT_IMAGE_POSITION = "com.example.xyzreader.ui.extra_current_image_position";
@@ -65,7 +63,7 @@ public class ArticleListActivity extends ActionBarActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_article_list);
+        setContentView(R.layout.activity_main);
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
 
@@ -189,9 +187,13 @@ public class ArticleListActivity extends ActionBarActivity implements
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                       // intent.putExtra(EXTRA_STARTING_IMAGE_POSITION,mImagePosition);
 
-                        ActivityOptions options = ActivityOptions.
-                                makeSceneTransitionAnimation(ArticleListActivity.this, view.findViewById(R.id.thumbnail),
-                                        view.findViewById(R.id.thumbnail).getTransitionName());
+                        DynamicHeightNetworkImageView imageView = (DynamicHeightNetworkImageView)findViewById(R.id.thumbnail);
+                        String transName = imageView.getTransitionName();
+                        Log.e(TAG,"Trans name: " + transName);
+                        //Create transition when starting detail activity
+                        ActivityOptionsCompat options = ActivityOptionsCompat.
+                                makeSceneTransitionAnimation(ArticleMainActivity.this, new Pair<View,String>(imageView,transName));
+
                         startActivity(intent, options.toBundle());
                     } else {
 
@@ -215,7 +217,7 @@ public class ArticleListActivity extends ActionBarActivity implements
                             + mCursor.getString(ArticleLoader.Query.AUTHOR));
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
-                    ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
+                    ImageLoaderHelper.getInstance(ArticleMainActivity.this).getImageLoader());
 
 
             //Set title of image to be used in the shared transition

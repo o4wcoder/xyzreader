@@ -53,18 +53,18 @@ public class ArticleDetailActivity extends ActionBarActivity
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
                             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
-        setContentView(R.layout.activity_article_detail);
+        setContentView(R.layout.activity_detail);
 
         getLoaderManager().initLoader(0, null, this);
 
         //Get position of shared element from tranistion
-        mStartingPosition = getIntent().getIntExtra(ArticleListActivity.EXTRA_STARTING_IMAGE_POSITION,0);
+        mStartingPosition = getIntent().getIntExtra(ArticleMainActivity.EXTRA_STARTING_IMAGE_POSITION,0);
 
         if(savedInstanceState == null) {
             mCurrentPosition = mStartingPosition;
         }
         else {
-            mCurrentPosition = savedInstanceState.getInt(ArticleListActivity.EXTRA_CURRENT_IMAGE_POSITION);
+            mCurrentPosition = savedInstanceState.getInt(ArticleMainActivity.EXTRA_CURRENT_IMAGE_POSITION);
         }
         Log.e(TAG, "ArticleDetailActivity onCreate: current position: " + mCurrentPosition);
 
@@ -155,7 +155,7 @@ public class ArticleDetailActivity extends ActionBarActivity
             mStartId = 0;
 
             mCursor.moveToPosition((int)mSelectedItemId);
-            Log.e(TAG,"onCreate, geting title: " + mCursor.getString(ArticleLoader.Query.TITLE));
+//            Log.e(TAG,"onLoadFinished, geting title: " + mCursor.getString(ArticleLoader.Query.TITLE));
         }
     }
 
