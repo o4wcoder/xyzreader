@@ -5,10 +5,12 @@ import android.app.LoaderManager;
 import android.app.SharedElementCallback;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
@@ -138,8 +140,18 @@ public class ArticleMainActivity extends AppCompatActivity implements
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return ArticleLoader.newAllArticlesInstance(this);
+        //return ArticleLoader.newAllArticlesInstance(this);
+
+        Uri uri = ItemsContract.Items.buildDirUri();
+        return new CursorLoader(this,
+                uri,
+                ArticleLoader.Query.PROJECTION,
+                null,
+                null,
+                ItemsContract.Items.DEFAULT_SORT);
     }
+
+
 
     @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {

@@ -2,6 +2,6 @@
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
     android:transitionOrdering="together"
     android:duration="500">
-    <changeTransform />
-    <changeBounds />
+
+
 </transitionSet>
