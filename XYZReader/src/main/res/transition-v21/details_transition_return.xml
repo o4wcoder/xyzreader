@@ -3,5 +3,4 @@
     android:transitionOrdering="together"
     android:duration="500">
 
-
 </transitionSet>

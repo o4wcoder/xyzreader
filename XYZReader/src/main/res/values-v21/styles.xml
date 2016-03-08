@@ -30,7 +30,7 @@
     <style name="AppTheme.Detail">
         <item name="android:windowContentTransitions">true</item>
         <item name="android:windowEnterTransition">@transition/details_transition_enter</item>
-        <item name="android:windowReturnTransition">@transition/details_transition_exit</item>
+        <item name="android:windowReturnTransition">@transition/details_transition_return</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 

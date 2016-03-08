@@ -7,6 +7,7 @@ import android.support.v4.util.LruCache;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.Volley;
+import com.example.xyzreader.R;
 
 public class ImageLoaderHelper {
     private static ImageLoaderHelper sInstance;
@@ -40,5 +41,10 @@ public class ImageLoaderHelper {
 
     public ImageLoader getImageLoader() {
         return mImageLoader;
+    }
+
+    public static String getTransitionName(Context context, int position) {
+
+        return context.getString(R.string.transition_image) + String.valueOf(position);
     }
 }

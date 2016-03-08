@@ -24,6 +24,7 @@ import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import android.support.v7.app.AppCompatActivity;
@@ -51,6 +52,7 @@ public class ArticleMainActivity extends AppCompatActivity implements
 
     static final String EXTRA_STARTING_IMAGE_POSITION = "com.example.xyzreader.ui.extra_starting_image_position";
     static final String EXTRA_CURRENT_IMAGE_POSITION = "com.example.xyzreader.ui.extra_current_image_position";
+   // static final String EXTRA_TRANSITION_NAME = "com.example.xyzreader.ui.extra_transition_name";
 
     private Toolbar mToolbar;
     private SwipeRefreshLayout mSwipeRefreshLayout;
@@ -60,6 +62,7 @@ public class ArticleMainActivity extends AppCompatActivity implements
     private SharedElementCallback mSharedElementCallback;
     private Bundle mTmpReenterState;
     private boolean mIsDetailsActivityStarted;
+
 
 
     @Override
@@ -81,34 +84,61 @@ public class ArticleMainActivity extends AppCompatActivity implements
             refresh();
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mSharedElementCallback = new SharedElementCallback() {
-                @Override
-                public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-                    Log.e(TAG,"Inside onMapSharedElements()");
-                    if(mTmpReenterState != null) {
-
-                        int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
-                        int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
-
-                        if(startingPosition != currentPosition) {
-                            //Position has changed after swiping the PageView
-                        }
-
-                        mTmpReenterState = null;
-                    }
-                    else {
-
-                    }
-                }
-            };
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            mSharedElementCallback = new SharedElementCallback() {
+//                @Override
+//                public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+//                    Log.e(TAG,"Inside onMapSharedElements()");
+//                    if(mTmpReenterState != null) {
+//
+//                        int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
+//                        int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
+//
+//                        if(startingPosition != currentPosition) {
+//                            //Position has changed after swiping the PageView
+//                        }
+//
+//                        mTmpReenterState = null;
+//                    }
+//                    else {
+//
+//                    }
+//                }
+//            };
+   //     }
     }
 
     private void refresh() {
         startService(new Intent(this, UpdaterService.class));
     }
 
+    @Override
+    public void onActivityReenter(int requestCode, Intent data) {
+        super.onActivityReenter(requestCode, data);
+
+        Log.e(TAG, "onActivityReenter()");
+        Bundle mTmpReenterState = new Bundle(data.getExtras());
+        int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
+        int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
+        if (startingPosition != currentPosition) {
+            mRecyclerView.scrollToPosition(currentPosition);
+        }
+        supportPostponeEnterTransition();
+
+        mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                mRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
+                // TODO: figure out why it is necessary to request layout here in order to get a smooth transition.
+                mRecyclerView.requestLayout();
+                supportStartPostponedEnterTransition();
+                return true;
+            }
+        });
+
+
+
+    }
     @Override
     protected void onStart() {
         super.onStart();
@@ -197,14 +227,26 @@ public class ArticleMainActivity extends AppCompatActivity implements
                     Intent intent = new Intent(Intent.ACTION_VIEW,
                             ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition())));
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                      // intent.putExtra(EXTRA_STARTING_IMAGE_POSITION,mImagePosition);
 
-                        DynamicHeightNetworkImageView imageView = (DynamicHeightNetworkImageView)findViewById(R.id.thumbnail);
+
+                        DynamicHeightNetworkImageView imageView = (DynamicHeightNetworkImageView) findViewById(R.id.thumbnail);
+
+                        Log.e(TAG, "OnClick() Trans position = " + vh.getAdapterPosition());
+                        // Log.e(TAG, "OnClick() Cursor title at this position = " + mCursor.getString(1));
+                        //imageView.setTransitionName(ImageLoaderHelper.getTransitionName(ArticleMainActivity.this, vh.getAdapterPosition()));
+                        //Get title of article located in column 1 of the table. Use it as the transition name
+                        //imageView.setTransitionName(mCursor.getString(1));
                         String transName = imageView.getTransitionName();
-                        Log.e(TAG,"Trans name: " + transName);
+                        Log.e(TAG, "OnClick() Trans name = " + transName);
+
+                        //Store tranistion name in intent to pass to detail fragment
+                        // intent.putExtra(EXTRA_TRANSITION_NAME,transName);
                         //Create transition when starting detail activity
+                        mImagePosition = vh.getAdapterPosition();
+                        Log.e(TAG, "onClick() Setting image position = " + mImagePosition);
+                        intent.putExtra(EXTRA_STARTING_IMAGE_POSITION, mImagePosition);
                         ActivityOptionsCompat options = ActivityOptionsCompat.
-                                makeSceneTransitionAnimation(ArticleMainActivity.this, new Pair<View,String>(imageView,transName));
+                                makeSceneTransitionAnimation(ArticleMainActivity.this, new Pair<View, String>(imageView, transName));
 
                         startActivity(intent, options.toBundle());
                     } else {
@@ -234,13 +276,19 @@ public class ArticleMainActivity extends AppCompatActivity implements
 
             //Set title of image to be used in the shared transition
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-              Log.e(TAG, "Pos: " + position +
-                                " Article title: " + mCursor.getString(ArticleLoader.Query.TITLE));
-                holder.thumbnailView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
-                holder.thumbnailView.setTag(mCursor.getString(ArticleLoader.Query.TITLE));
-                mImagePosition = position;
-                Log.e(TAG,"onBindViewHolder. Setting Image position: " + mImagePosition);
+//              Log.e(TAG, "onBindViewHolder() Pos: " + position +
+//                      " Article title/trans name: " + mCursor.getString(ArticleLoader.Query.TITLE));
+//                holder.thumbnailView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
+//                        holder.thumbnailView.setTag(mCursor.getString(ArticleLoader.Query.TITLE));
+//                mImagePosition = position;
+//            }
+
+                holder.thumbnailView.setTransitionName(ImageLoaderHelper.
+                        getTransitionName(ArticleMainActivity.this, position));
+                Log.e(TAG, "onBindViewHolder() Pos: " + position +
+                        " trans name: " + holder.thumbnailView.getTransitionName());
             }
+
 
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
         }
@@ -251,11 +299,12 @@ public class ArticleMainActivity extends AppCompatActivity implements
         }
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
        public DynamicHeightNetworkImageView thumbnailView;
 
         public TextView titleView;
         public TextView subtitleView;
+
 
         public ViewHolder(View view) {
             super(view);
@@ -264,5 +313,11 @@ public class ArticleMainActivity extends AppCompatActivity implements
             titleView = (TextView) view.findViewById(R.id.article_title);
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
         }
+
+        @Override
+        public void onClick(View v) {
+
+        }
     }
+
 }

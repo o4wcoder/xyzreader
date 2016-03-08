@@ -39,6 +39,7 @@ public class ArticleDetailFragment extends Fragment implements
     private static final String TAG = "ArticleDetailFragment";
 
     public static final String ARG_ITEM_ID = "item_id";
+    public static final String ARG_PAGER_POSITION = "pager_position";
     private static final float PARALLAX_FACTOR = 1.25f;
 
     private Cursor mCursor;
@@ -55,6 +56,7 @@ public class ArticleDetailFragment extends Fragment implements
     private int mScrollY;
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
+    private int mPagerPosition;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -63,9 +65,10 @@ public class ArticleDetailFragment extends Fragment implements
     public ArticleDetailFragment() {
     }
 
-    public static ArticleDetailFragment newInstance(long itemId) {
+    public static ArticleDetailFragment newInstance(long itemId,int position) {
         Bundle arguments = new Bundle();
         arguments.putLong(ARG_ITEM_ID, itemId);
+        arguments.putInt(ARG_PAGER_POSITION,position);
         ArticleDetailFragment fragment = new ArticleDetailFragment();
         fragment.setArguments(arguments);
         return fragment;
@@ -77,7 +80,11 @@ public class ArticleDetailFragment extends Fragment implements
 
         if (getArguments().containsKey(ARG_ITEM_ID)) {
             mItemId = getArguments().getLong(ARG_ITEM_ID);
-            Log.e(TAG,"ArticleDetailFragment onCreate: Item ID: " + mItemId);
+        }
+
+        if(getArguments().containsKey(ARG_PAGER_POSITION)) {
+            mPagerPosition = getArguments().getInt(ARG_PAGER_POSITION);
+            Log.e(TAG,"onCreate(): Pager position = " + mPagerPosition);
         }
 
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);
@@ -126,6 +133,8 @@ public class ArticleDetailFragment extends Fragment implements
         });
 
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
+        mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(),mPagerPosition));
+        Log.e(TAG,"onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
         mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
         mStatusBarColorDrawable = new ColorDrawable(0);
@@ -213,7 +222,8 @@ public class ArticleDetailFragment extends Fragment implements
                                 mPhotoView.setImageBitmap(imageContainer.getBitmap());
 
                                 //Set Shared Element name
-                                mPhotoView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
+                                Log.e(TAG,"BindViews: transition name = " + mPhotoView.getTransitionName() + " Title = " + mCursor.getString(ArticleLoader.Query.TITLE));
+                              //  mPhotoView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
                                 mRootView.findViewById(R.id.meta_bar)
                                         .setBackgroundColor(mMutedColor);
                                 updateStatusBar();
