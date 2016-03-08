@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -84,7 +85,7 @@ public class ArticleDetailFragment extends Fragment implements
 
         if(getArguments().containsKey(ARG_PAGER_POSITION)) {
             mPagerPosition = getArguments().getInt(ARG_PAGER_POSITION);
-            Log.e(TAG,"onCreate(): Pager position = " + mPagerPosition);
+           // Log.e(TAG,"onCreate(): Pager position = " + mPagerPosition);
         }
 
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);
@@ -112,30 +113,32 @@ public class ArticleDetailFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         mRootView = inflater.inflate(R.layout.fragment_detail, container, false);
-        mDrawInsetsFrameLayout = (DrawInsetsFrameLayout)
-                mRootView.findViewById(R.id.draw_insets_frame_layout);
-        mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
-            @Override
-            public void onInsetsChanged(Rect insets) {
-                mTopInset = insets.top;
-            }
-        });
-
-        mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
-        mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
-            @Override
-            public void onScrollChanged() {
-                mScrollY = mScrollView.getScrollY();
-                getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
-                mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
-                updateStatusBar();
-            }
-        });
+//        mDrawInsetsFrameLayout = (DrawInsetsFrameLayout)
+//                mRootView.findViewById(R.id.draw_insets_frame_layout);
+//        mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
+//            @Override
+//            public void onInsetsChanged(Rect insets) {
+//                mTopInset = insets.top;
+//            }
+//        });
+//
+//        mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
+//        mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
+//            @Override
+//            public void onScrollChanged() {
+//                mScrollY = mScrollView.getScrollY();
+//                getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
+//                mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
+//                updateStatusBar();
+//            }
+//        });
 
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
-        mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(),mPagerPosition));
+        mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(), mPagerPosition));
         Log.e(TAG,"onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
-        mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
+
+
+      //  mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
         mStatusBarColorDrawable = new ColorDrawable(0);
 
@@ -152,11 +155,23 @@ public class ArticleDetailFragment extends Fragment implements
         bindViews();
         updateStatusBar();
 
-        getActivity().supportStartPostponedEnterTransition();
 
         return mRootView;
     }
 
+    private void setupStartPostponedEnterTransition() {
+
+      //  if (mAlbumPosition == mStartingPosition) {
+            mPhotoView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    mPhotoView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    getActivity().supportStartPostponedEnterTransition();
+                    return true;
+                }
+            });
+       // }
+    }
     private void updateStatusBar() {
         int color = 0;
         if (mPhotoView != null && mTopInset != 0 && mScrollY > 0) {
@@ -169,7 +184,7 @@ public class ArticleDetailFragment extends Fragment implements
                     (int) (Color.blue(mMutedColor) * 0.9));
         }
         mStatusBarColorDrawable.setColor(color);
-        mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);
+       // mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);
     }
 
     static float progress(float v, float min, float max) {
@@ -221,12 +236,11 @@ public class ArticleDetailFragment extends Fragment implements
                                 mMutedColor = p.getDarkMutedColor(0xFF333333);
                                 mPhotoView.setImageBitmap(imageContainer.getBitmap());
 
-                                //Set Shared Element name
-                                Log.e(TAG,"BindViews: transition name = " + mPhotoView.getTransitionName() + " Title = " + mCursor.getString(ArticleLoader.Query.TITLE));
-                              //  mPhotoView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
-                                mRootView.findViewById(R.id.meta_bar)
-                                        .setBackgroundColor(mMutedColor);
+                                //mRootView.findViewById(R.id.meta_bar)
+                                 //       .setBackgroundColor(mMutedColor);
                                 updateStatusBar();
+
+
                             }
                         }
 
@@ -264,7 +278,10 @@ public class ArticleDetailFragment extends Fragment implements
             mCursor = null;
         }
 
+
+        getActivity().supportStartPostponedEnterTransition();
         bindViews();
+
     }
 
     @Override

@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.util.Pair;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
@@ -226,21 +227,15 @@ public class ArticleMainActivity extends AppCompatActivity implements
                     //Create intent to start ArticleDetailActivity sending in ID of view selected.
                     Intent intent = new Intent(Intent.ACTION_VIEW,
                             ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition())));
+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
 
-                        DynamicHeightNetworkImageView imageView = (DynamicHeightNetworkImageView) findViewById(R.id.thumbnail);
+                        DynamicHeightNetworkImageView imageView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
 
-                        Log.e(TAG, "OnClick() Trans position = " + vh.getAdapterPosition());
-                        // Log.e(TAG, "OnClick() Cursor title at this position = " + mCursor.getString(1));
-                        //imageView.setTransitionName(ImageLoaderHelper.getTransitionName(ArticleMainActivity.this, vh.getAdapterPosition()));
-                        //Get title of article located in column 1 of the table. Use it as the transition name
-                        //imageView.setTransitionName(mCursor.getString(1));
                         String transName = imageView.getTransitionName();
                         Log.e(TAG, "OnClick() Trans name = " + transName);
 
-                        //Store tranistion name in intent to pass to detail fragment
-                        // intent.putExtra(EXTRA_TRANSITION_NAME,transName);
                         //Create transition when starting detail activity
                         mImagePosition = vh.getAdapterPosition();
                         Log.e(TAG, "onClick() Setting image position = " + mImagePosition);
@@ -269,6 +264,7 @@ public class ArticleMainActivity extends AppCompatActivity implements
                             DateUtils.FORMAT_ABBREV_ALL).toString()
                             + " by "
                             + mCursor.getString(ArticleLoader.Query.AUTHOR));
+
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleMainActivity.this).getImageLoader());
@@ -283,8 +279,9 @@ public class ArticleMainActivity extends AppCompatActivity implements
 //                mImagePosition = position;
 //            }
 
-                holder.thumbnailView.setTransitionName(ImageLoaderHelper.
-                        getTransitionName(ArticleMainActivity.this, position));
+                //holder.thumbnailView.setTransitionName(ImageLoaderHelper.
+                    //    getTransitionName(ArticleMainActivity.this, position));
+                ViewCompat.setTransitionName(holder.thumbnailView,ImageLoaderHelper.getTransitionName(ArticleMainActivity.this,position));
                 Log.e(TAG, "onBindViewHolder() Pos: " + position +
                         " trans name: " + holder.thumbnailView.getTransitionName());
             }
@@ -299,7 +296,7 @@ public class ArticleMainActivity extends AppCompatActivity implements
         }
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    public static class ViewHolder extends RecyclerView.ViewHolder {
        public DynamicHeightNetworkImageView thumbnailView;
 
         public TextView titleView;
@@ -314,10 +311,6 @@ public class ArticleMainActivity extends AppCompatActivity implements
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
         }
 
-        @Override
-        public void onClick(View v) {
-
-        }
     }
 
 }

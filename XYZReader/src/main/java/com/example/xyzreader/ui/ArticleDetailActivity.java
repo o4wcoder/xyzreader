@@ -58,8 +58,11 @@ public class ArticleDetailActivity extends AppCompatActivity
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
                             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
-        setContentView(R.layout.activity_detail);
         supportPostponeEnterTransition();
+
+
+        setContentView(R.layout.activity_detail);
+
 
         //getLoaderManager().initLoader(0, null, this);
         getSupportLoaderManager().initLoader(0,null,this);
@@ -73,7 +76,7 @@ public class ArticleDetailActivity extends AppCompatActivity
         else {
             mCurrentPosition = savedInstanceState.getInt(ArticleMainActivity.EXTRA_CURRENT_IMAGE_POSITION);
         }
-        Log.e(TAG, "ArticleDetailActivity onCreate: current position: " + mCurrentPosition);
+      //  Log.e(TAG, "ArticleDetailActivity onCreate: current position: " + mCurrentPosition);
 
         mPagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
         mPager = (ViewPager) findViewById(R.id.pager);
@@ -93,7 +96,7 @@ public class ArticleDetailActivity extends AppCompatActivity
 
             @Override
             public void onPageSelected(int position) {
-                Log.e(TAG,"Pager:onPageSelected position:" + position);
+               // Log.e(TAG,"Pager:onPageSelected position:" + position);
                 if (mCursor != null) {
                     mCursor.moveToPosition(position);
                 }
@@ -130,7 +133,7 @@ public class ArticleDetailActivity extends AppCompatActivity
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getData() != null) {
                 mStartId = ItemsContract.Items.getItemId(getIntent().getData());
-                Log.e(TAG, "onCreate, getting saved instance start pos of " + mStartId);
+               // Log.e(TAG, "onCreate, getting saved instance start pos of " + mStartId);
 
                 mSelectedItemId = mStartId;
             }
@@ -190,6 +193,10 @@ public class ArticleDetailActivity extends AppCompatActivity
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         mCursor = null;
         mPagerAdapter.notifyDataSetChanged();
+    }
+
+    public void clickFAB(View view) {
+        Log.e(TAG,"clickFAB()");
     }
 
     public void onUpButtonFloorChanged(long itemId, ArticleDetailFragment fragment) {
