@@ -1,5 +1,6 @@
 package com.example.xyzreader.ui;
 
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -14,6 +15,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.graphics.Palette;
+import android.support.v7.view.CollapsibleActionView;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
@@ -43,6 +45,8 @@ public class ArticleDetailFragment extends Fragment implements
     public static final String ARG_PAGER_POSITION = "pager_position";
     private static final float PARALLAX_FACTOR = 1.25f;
 
+    int TEXT_FADE_DURATION = 500;
+
     private Cursor mCursor;
     private long mItemId;
     private View mRootView;
@@ -58,6 +62,10 @@ public class ArticleDetailFragment extends Fragment implements
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
     private int mPagerPosition;
+    private CollapsingToolbarLayout mCollapsingToolbarLayout;
+
+    TextView mTitleView;
+    TextView mBylineView;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -142,6 +150,8 @@ public class ArticleDetailFragment extends Fragment implements
 
         mStatusBarColorDrawable = new ColorDrawable(0);
 
+        //Get CollapsingToolbarLayout
+        mCollapsingToolbarLayout = (CollapsingToolbarLayout)mRootView.findViewById(R.id.collapsing_toolbar);
         mRootView.findViewById(R.id.share_fab).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -206,9 +216,9 @@ public class ArticleDetailFragment extends Fragment implements
             return;
         }
 
-        TextView titleView = (TextView) mRootView.findViewById(R.id.article_title);
-        TextView bylineView = (TextView) mRootView.findViewById(R.id.article_byline);
-        bylineView.setMovementMethod(new LinkMovementMethod());
+        mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
+        mBylineView = (TextView) mRootView.findViewById(R.id.article_byline);
+        mBylineView.setMovementMethod(new LinkMovementMethod());
         TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
         bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
@@ -216,15 +226,8 @@ public class ArticleDetailFragment extends Fragment implements
             mRootView.setAlpha(0);
             mRootView.setVisibility(View.VISIBLE);
             mRootView.animate().alpha(1);
-            titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
-            bylineView.setText(Html.fromHtml(
-                    DateUtils.getRelativeTimeSpanString(
-                            mCursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
-                            System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                            DateUtils.FORMAT_ABBREV_ALL).toString()
-                            + " by <font color='#ffffff'>"
-                            + mCursor.getString(ArticleLoader.Query.AUTHOR)
-                            + "</font>"));
+
+
             bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY)));
             ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
                     .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
@@ -236,11 +239,38 @@ public class ArticleDetailFragment extends Fragment implements
                                 mMutedColor = p.getDarkMutedColor(0xFF333333);
                                 mPhotoView.setImageBitmap(imageContainer.getBitmap());
 
-                                //mRootView.findViewById(R.id.meta_bar)
-                                 //       .setBackgroundColor(mMutedColor);
+                                //Setup title and byline after image has loaded
+                                mTitleView.setAlpha(0f);
+                                String title = mCursor.getString(ArticleLoader.Query.TITLE);
+                                        mTitleView.setText(title);
+
+                                mBylineView.setAlpha(0f);
+                                mBylineView.setText(Html.fromHtml(
+                                        DateUtils.getRelativeTimeSpanString(
+                                                mCursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
+                                                System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
+                                                DateUtils.FORMAT_ABBREV_ALL).toString()
+                                                + " by <font color='#ffffff'>"
+                                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                                                + "</font>"));
+
+                                //Fade in text
+                                mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
+                                mBylineView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
                                 updateStatusBar();
 
+                                mCollapsingToolbarLayout.setTitle(title);
+                                mCollapsingToolbarLayout.setExpandedTitleColor(getResources().
+                                        getColor(android.R.color.transparent));
 
+                                int primaryColor = getResources().getColor(R.color.theme_primary);
+                                int primaryDarkColor = getResources().getColor(R.color.theme_primary_dark);
+                                mCollapsingToolbarLayout.setContentScrimColor(p.getMutedColor(primaryColor));
+                                mCollapsingToolbarLayout.setStatusBarScrimColor(p.getDarkMutedColor(primaryDarkColor));
+
+                                //Not that we've successfully loaded the image, we can start the
+                                //shared transition.
+                                getActivity().supportStartPostponedEnterTransition();
                             }
                         }
 
@@ -251,8 +281,8 @@ public class ArticleDetailFragment extends Fragment implements
                     });
         } else {
             mRootView.setVisibility(View.GONE);
-            titleView.setText("N/A");
-            bylineView.setText("N/A" );
+            //mTitleView.setText("N/A");
+            //mBylineView.setText("N/A" );
             bodyView.setText("N/A");
         }
     }
@@ -279,7 +309,7 @@ public class ArticleDetailFragment extends Fragment implements
         }
 
 
-        getActivity().supportStartPostponedEnterTransition();
+
         bindViews();
 
     }
