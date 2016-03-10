@@ -1,5 +1,7 @@
 package com.example.xyzreader.ui;
 
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -19,6 +21,7 @@ import android.support.v7.view.CollapsibleActionView;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
+import android.transition.Transition;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -137,15 +140,24 @@ public class ArticleDetailFragment extends Fragment implements
 //                mScrollY = mScrollView.getScrollY();
 //                getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
 //                mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
-//                updateStatusBar();
+//
 //            }
 //        });
 
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
         mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(), mPagerPosition));
-        Log.e(TAG,"onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
+        Log.e(TAG, "onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getActivity().getWindow().getSharedElementEnterTransition().addListener(new ImageTransitionListener() {
+                @Override
+                public void onTransitionEnd(Transition transition) {
 
+                    //Fade in text
+                    mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
+                }
+            });
+        }
       //  mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
         mStatusBarColorDrawable = new ColorDrawable(0);
@@ -163,7 +175,7 @@ public class ArticleDetailFragment extends Fragment implements
         });
 
         bindViews();
-        updateStatusBar();
+       // updateStatusBar();
 
 
         return mRootView;
@@ -242,21 +254,16 @@ public class ArticleDetailFragment extends Fragment implements
                                 //Setup title and byline after image has loaded
                                 mTitleView.setAlpha(0f);
                                 String title = mCursor.getString(ArticleLoader.Query.TITLE);
-                                        mTitleView.setText(title);
+                                mTitleView.setText(title);
 
-                                mBylineView.setAlpha(0f);
-                                mBylineView.setText(Html.fromHtml(
-                                        DateUtils.getRelativeTimeSpanString(
+                                mBylineView.setText(Html.fromHtml(" By "
+                                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
+                                                + "<br>" +
+                                                DateUtils.getRelativeTimeSpanString(
                                                 mCursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
                                                 System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                                                DateUtils.FORMAT_ABBREV_ALL).toString()
-                                                + " by <font color='#ffffff'>"
-                                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
-                                                + "</font>"));
+                                                DateUtils.FORMAT_ABBREV_ALL).toString()));
 
-                                //Fade in text
-                                mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
-                                mBylineView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
                                 updateStatusBar();
 
                                 mCollapsingToolbarLayout.setTitle(title);
