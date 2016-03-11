@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.content.Loader;
 import android.support.v4.content.CursorLoader;
 import android.database.Cursor;
@@ -19,10 +20,14 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.widget.ImageView;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * An activity representing a single Article detail screen, letting you swipe between articles.
@@ -46,9 +51,38 @@ public class ArticleDetailActivity extends AppCompatActivity
     private View mUpButtonContainer;
     private View mUpButton;
 
+    ArticleDetailFragment mCurrentArticleDetailsFragment;
+
     //Used for Shared Element Transitions
     private int mCurrentPosition;
-    private int mStartingPosition;;
+    private int mStartingPosition;
+    private boolean mIsReturning;
+
+    private final SharedElementCallback mCallback = new SharedElementCallback() {
+        @Override
+        public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+
+            if(mIsReturning) {
+                ImageView sharedElement = mCurrentArticleDetailsFragment.getSharedImage();
+                if(sharedElements == null) {
+                    // If shared element is null, then it has been scrolled off screen and
+                    // no longer visible. In this case we cancel the shared element transition by
+                    // removing the shared element from the shared elements map.
+                    names.clear();
+                    sharedElements.clear();
+                } else if (mStartingPosition != mCurrentPosition) {
+                    // If the user has swiped to a different ViewPager page, then we need to
+                    // remove the old shared element and replace it with the new shared element
+                    // that should be transitioned instead.
+                    names.clear();
+                    names.add(sharedElement.getTransitionName());
+                    sharedElements.clear();
+                    sharedElements.put(sharedElement.getTransitionName(), sharedElement);
+                }
+
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +92,7 @@ public class ArticleDetailActivity extends AppCompatActivity
                             View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
         supportPostponeEnterTransition();
-
+        setEnterSharedElementCallback(mCallback);
 
         setContentView(R.layout.activity_detail);
 
@@ -152,8 +186,9 @@ public class ArticleDetailActivity extends AppCompatActivity
      */
     @Override
     public void finishAfterTransition() {
-//        mIsReturning = true;
-          Intent data = new Intent();
+        mIsReturning = true;
+        Intent data = new Intent();
+        Log.e(TAG,"finishAfterTransition() starting pos = " + mStartingPosition);
         data.putExtra(ArticleMainActivity.EXTRA_STARTING_IMAGE_POSITION, mStartingPosition);
         data.putExtra(ArticleMainActivity.EXTRA_CURRENT_IMAGE_POSITION, mCurrentPosition);
         setResult(RESULT_OK, data);
@@ -218,9 +253,9 @@ public class ArticleDetailActivity extends AppCompatActivity
         @Override
         public void setPrimaryItem(ViewGroup container, int position, Object object) {
             super.setPrimaryItem(container, position, object);
-            ArticleDetailFragment fragment = (ArticleDetailFragment) object;
-            if (fragment != null) {
-                mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
+            mCurrentArticleDetailsFragment = (ArticleDetailFragment) object;
+            if (mCurrentArticleDetailsFragment != null) {
+                mSelectedItemUpButtonFloor = mCurrentArticleDetailsFragment.getUpButtonFloor();
                 updateUpButtonPosition();
             }
         }
@@ -228,7 +263,7 @@ public class ArticleDetailActivity extends AppCompatActivity
         @Override
         public Fragment getItem(int position) {
             mCursor.moveToPosition(position);
-            return ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID),position);
+            return ArticleDetailFragment.newInstance(mCursor.getLong(ArticleLoader.Query._ID),mStartingPosition,position);
         }
 
         @Override

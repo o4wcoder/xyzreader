@@ -2,7 +2,7 @@ package com.example.xyzreader.ui;
 
 import android.app.ActivityOptions;
 import android.app.LoaderManager;
-import android.app.SharedElementCallback;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.CursorLoader;
@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.util.Pair;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -65,16 +66,56 @@ public class ArticleMainActivity extends AppCompatActivity implements
     private boolean mIsDetailsActivityStarted;
 
 
+    private final SharedElementCallback mCallback = new SharedElementCallback() {
+        @Override
+        public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+            Log.e(TAG,"onMapSharedElements()");
+            if (mTmpReenterState != null) {
+                int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
+                int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
+                Log.e(TAG,"startingPos = " + startingPosition + " currentPos = " + currentPosition);
+                if (startingPosition != currentPosition) {
+                    // If startingPosition != currentPosition the user must have swiped to a
+                    // different page in the DetailsActivity. We must update the shared element
+                    // so that the correct one falls into place.
+                    String newTransitionName = ImageLoaderHelper.
+                            getTransitionName(ArticleMainActivity.this, currentPosition);
+                    View newSharedElement = mRecyclerView.findViewWithTag(newTransitionName);
+                    if (newSharedElement != null) {
+                        names.clear();
+                        names.add(newTransitionName);
+                        sharedElements.clear();
+                        sharedElements.put(newTransitionName, newSharedElement);
+                    }
+                }
+
+                mTmpReenterState = null;
+            } else {
+                Log.e(TAG,"renter state was null");
+                // If mTmpReenterState is null, then the activity is exiting.
+                View navigationBar = findViewById(android.R.id.navigationBarBackground);
+                View statusBar = findViewById(android.R.id.statusBarBackground);
+                if (navigationBar != null) {
+                    names.add(navigationBar.getTransitionName());
+                    sharedElements.put(navigationBar.getTransitionName(), navigationBar);
+                }
+                if (statusBar != null) {
+                    names.add(statusBar.getTransitionName());
+                    sharedElements.put(statusBar.getTransitionName(), statusBar);
+                }
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        setExitSharedElementCallback(mCallback);
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
 
 
-        final View toolbarContainerView = findViewById(R.id.toolbar_container);
+       // final View toolbarContainerView = findViewById(R.id.toolbar_container);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
@@ -84,29 +125,6 @@ public class ArticleMainActivity extends AppCompatActivity implements
         if (savedInstanceState == null) {
             refresh();
         }
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            mSharedElementCallback = new SharedElementCallback() {
-//                @Override
-//                public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-//                    Log.e(TAG,"Inside onMapSharedElements()");
-//                    if(mTmpReenterState != null) {
-//
-//                        int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
-//                        int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
-//
-//                        if(startingPosition != currentPosition) {
-//                            //Position has changed after swiping the PageView
-//                        }
-//
-//                        mTmpReenterState = null;
-//                    }
-//                    else {
-//
-//                    }
-//                }
-//            };
-   //     }
     }
 
     private void refresh() {
@@ -118,8 +136,9 @@ public class ArticleMainActivity extends AppCompatActivity implements
         super.onActivityReenter(requestCode, data);
 
         Log.e(TAG, "onActivityReenter()");
-        Bundle mTmpReenterState = new Bundle(data.getExtras());
+        mTmpReenterState = new Bundle(data.getExtras());
         int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
+        Log.e(TAG,"onActivityReenter() Starting pos = " + startingPosition);
         int currentPosition = mTmpReenterState.getInt(EXTRA_CURRENT_IMAGE_POSITION);
         if (startingPosition != currentPosition) {
             mRecyclerView.scrollToPosition(currentPosition);
@@ -282,8 +301,8 @@ public class ArticleMainActivity extends AppCompatActivity implements
                 //holder.thumbnailView.setTransitionName(ImageLoaderHelper.
                     //    getTransitionName(ArticleMainActivity.this, position));
                 ViewCompat.setTransitionName(holder.thumbnailView,ImageLoaderHelper.getTransitionName(ArticleMainActivity.this,position));
-                Log.e(TAG, "onBindViewHolder() Pos: " + position +
-                        " trans name: " + holder.thumbnailView.getTransitionName());
+               // Log.e(TAG, "onBindViewHolder() Pos: " + position +
+                //        " trans name: " + holder.thumbnailView.getTransitionName());
             }
 
 

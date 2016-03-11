@@ -2,6 +2,8 @@ package com.example.xyzreader.ui;
 
 import android.annotation.TargetApi;
 import android.os.Build;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -46,6 +48,7 @@ public class ArticleDetailFragment extends Fragment implements
 
     public static final String ARG_ITEM_ID = "item_id";
     public static final String ARG_PAGER_POSITION = "pager_position";
+    public static final String ARG_STARTING_POSITION = "starting_position";
     private static final float PARALLAX_FACTOR = 1.25f;
 
     int TEXT_FADE_DURATION = 500;
@@ -65,10 +68,13 @@ public class ArticleDetailFragment extends Fragment implements
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
     private int mPagerPosition;
+    private int mStartingPosition;
     private CollapsingToolbarLayout mCollapsingToolbarLayout;
 
     TextView mTitleView;
     TextView mBylineView;
+
+    boolean mIsTransitioning;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -77,9 +83,10 @@ public class ArticleDetailFragment extends Fragment implements
     public ArticleDetailFragment() {
     }
 
-    public static ArticleDetailFragment newInstance(long itemId,int position) {
+    public static ArticleDetailFragment newInstance(long itemId,int startingPostion, int position) {
         Bundle arguments = new Bundle();
         arguments.putLong(ARG_ITEM_ID, itemId);
+        arguments.putInt(ARG_STARTING_POSITION,startingPostion);
         arguments.putInt(ARG_PAGER_POSITION,position);
         ArticleDetailFragment fragment = new ArticleDetailFragment();
         fragment.setArguments(arguments);
@@ -99,15 +106,21 @@ public class ArticleDetailFragment extends Fragment implements
            // Log.e(TAG,"onCreate(): Pager position = " + mPagerPosition);
         }
 
+        if(getArguments().containsKey(ARG_STARTING_POSITION)) {
+            mStartingPosition = getArguments().getInt(ARG_STARTING_POSITION);
+        }
+
+       // Log.e(TAG,"Starting position = " + mStartingPosition + " Pager position = " + mPagerPosition);
+
+        //See if we had a transition from the main activiy
+        mIsTransitioning = savedInstanceState == null && mStartingPosition == mPagerPosition;
+
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);
         mStatusBarFullOpacityBottom = getResources().getDimensionPixelSize(
                 R.dimen.detail_card_top_margin);
         setHasOptionsMenu(true);
     }
 
-    public ArticleDetailActivity getActivityCast() {
-        return (ArticleDetailActivity) getActivity();
-    }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -124,39 +137,27 @@ public class ArticleDetailFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         mRootView = inflater.inflate(R.layout.fragment_detail, container, false);
-//        mDrawInsetsFrameLayout = (DrawInsetsFrameLayout)
-//                mRootView.findViewById(R.id.draw_insets_frame_layout);
-//        mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
-//            @Override
-//            public void onInsetsChanged(Rect insets) {
-//                mTopInset = insets.top;
-//            }
-//        });
-//
-//        mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
-//        mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
-//            @Override
-//            public void onScrollChanged() {
-//                mScrollY = mScrollView.getScrollY();
-//                getActivityCast().onUpButtonFloorChanged(mItemId, ArticleDetailFragment.this);
-//                mPhotoContainerView.setTranslationY((int) (mScrollY - mScrollY / PARALLAX_FACTOR));
-//
-//            }
-//        });
 
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
         mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(), mPagerPosition));
-        Log.e(TAG, "onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
+       // Log.e(TAG, "onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
+
+        mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getActivity().getWindow().getSharedElementEnterTransition().addListener(new ImageTransitionListener() {
-                @Override
-                public void onTransitionEnd(Transition transition) {
 
-                    //Fade in text
-                    mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
-                }
-            });
+            if(mIsTransitioning) {
+                mTitleView.setAlpha(0f);
+                getActivity().getWindow().getSharedElementEnterTransition().addListener(new ImageTransitionListener() {
+                    @Override
+                    public void onTransitionEnd(Transition transition) {
+
+                        //Fade in text
+                      //  Log.e(TAG, "Transition Ended. Fade in title " + mTitleView.getText());
+                        mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
+                    }
+                });
+            }
         }
       //  mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
@@ -228,7 +229,7 @@ public class ArticleDetailFragment extends Fragment implements
             return;
         }
 
-        mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
+
         mBylineView = (TextView) mRootView.findViewById(R.id.article_byline);
         mBylineView.setMovementMethod(new LinkMovementMethod());
         TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
@@ -246,13 +247,12 @@ public class ArticleDetailFragment extends Fragment implements
                         @Override
                         public void onResponse(ImageLoader.ImageContainer imageContainer, boolean b) {
                             Bitmap bitmap = imageContainer.getBitmap();
-                            if (bitmap != null) {
+                            if (bitmap != null && mCursor != null) {
                                 Palette p = Palette.generate(bitmap, 12);
                                 mMutedColor = p.getDarkMutedColor(0xFF333333);
                                 mPhotoView.setImageBitmap(imageContainer.getBitmap());
 
                                 //Setup title and byline after image has loaded
-                                mTitleView.setAlpha(0f);
                                 String title = mCursor.getString(ArticleLoader.Query.TITLE);
                                 mTitleView.setText(title);
 
@@ -275,7 +275,8 @@ public class ArticleDetailFragment extends Fragment implements
                                 mCollapsingToolbarLayout.setContentScrimColor(p.getMutedColor(primaryColor));
                                 mCollapsingToolbarLayout.setStatusBarScrimColor(p.getDarkMutedColor(primaryDarkColor));
 
-                                //Not that we've successfully loaded the image, we can start the
+                                Log.e(TAG,"Downloaded image, start Postponed transition on " + title);
+                                //Now that we've successfully loaded the image, we can start the
                                 //shared transition.
                                 getActivity().supportStartPostponedEnterTransition();
                             }
@@ -336,5 +337,27 @@ public class ArticleDetailFragment extends Fragment implements
         return mIsCard
                 ? (int) mPhotoContainerView.getTranslationY() + mPhotoView.getHeight() - mScrollY
                 : mPhotoView.getHeight() - mScrollY;
+    }
+
+    /**
+     * returns the shared image or null if it's not visible
+     * @return shared imageview
+     */
+    @Nullable
+    public ImageView getSharedImage() {
+        if(isViewInBounds(getActivity().getWindow().getDecorView(),mPhotoView)) {
+            return mPhotoView;
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns true if {@param view} is contained within {@param container}'s bounds.
+     */
+    private static boolean isViewInBounds(@NonNull View container, @NonNull View view) {
+        Rect containerBounds = new Rect();
+        container.getHitRect(containerBounds);
+        return view.getLocalVisibleRect(containerBounds);
     }
 }
