@@ -65,9 +65,7 @@ public class ArticleMainActivity extends AppCompatActivity implements
     private RecyclerView mRecyclerView;
 
     //Used for Shared Element Transitions
-    private SharedElementCallback mSharedElementCallback;
     private Bundle mTmpReenterState;
-    private boolean mIsDetailsActivityStarted;
 
 
     private final SharedElementCallback mCallback = new SharedElementCallback() {
@@ -95,7 +93,6 @@ public class ArticleMainActivity extends AppCompatActivity implements
 
                 mTmpReenterState = null;
             } else {
-                Log.e(TAG,"renter state was null");
                 // If mTmpReenterState is null, then the activity is exiting.
                 View navigationBar = findViewById(android.R.id.navigationBarBackground);
                 View statusBar = findViewById(android.R.id.statusBarBackground);
@@ -132,11 +129,12 @@ public class ArticleMainActivity extends AppCompatActivity implements
         startService(new Intent(this, UpdaterService.class));
     }
 
+
     @Override
     public void onActivityReenter(int requestCode, Intent data) {
         super.onActivityReenter(requestCode, data);
 
-        Log.e(TAG, "onActivityReenter()");
+        //transition back from detail activity to set image positions
         mTmpReenterState = new Bundle(data.getExtras());
         int startingPosition = mTmpReenterState.getInt(EXTRA_STARTING_IMAGE_POSITION);
         Log.e(TAG,"onActivityReenter() Starting pos = " + startingPosition);
@@ -144,6 +142,8 @@ public class ArticleMainActivity extends AppCompatActivity implements
         if (startingPosition != currentPosition) {
             mRecyclerView.scrollToPosition(currentPosition);
         }
+
+        //postpone return transition
         supportPostponeEnterTransition();
 
         mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -152,6 +152,8 @@ public class ArticleMainActivity extends AppCompatActivity implements
                 mRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
                 // TODO: figure out why it is necessary to request layout here in order to get a smooth transition.
                 mRecyclerView.requestLayout();
+
+                //Start transition once the recyler view is ready
                 supportStartPostponedEnterTransition();
                 return true;
             }

@@ -43,6 +43,12 @@ public class ImageLoaderHelper {
         return mImageLoader;
     }
 
+    /**
+     * Helper method to put together the transition image name based on selected image position
+     * @param context calling context
+     * @param position position of the image in the grid
+     * @return string transition name
+     */
     public static String getTransitionName(Context context, int position) {
 
         return context.getString(R.string.transition_image) + String.valueOf(position);

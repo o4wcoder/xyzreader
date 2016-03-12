@@ -112,8 +112,6 @@ public class ArticleDetailFragment extends Fragment implements
             mStartingPosition = getArguments().getInt(ARG_STARTING_POSITION);
         }
 
-       // Log.e(TAG,"Starting position = " + mStartingPosition + " Pager position = " + mPagerPosition);
-
         //See if we had a transition from the main activiy
         mIsTransitioning = savedInstanceState == null && mStartingPosition == mPagerPosition;
 
@@ -150,24 +148,18 @@ public class ArticleDetailFragment extends Fragment implements
                 getActivity().getWindow().getSharedElementEnterTransition().addListener(new ImageTransitionListener() {
                     @Override
                     public void onTransitionEnd(Transition transition) {
-
-                        //Fade in text
-                      //  Log.e(TAG, "Transition Ended. Fade in title " + mTitleView.getText());
-                        Log.e(TAG, "onTransitionEnd()");
-                      //  mCollapsingToolbarLayout.setVisibility(View.VISIBLE);
+                        //Fade in title text
                         mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
                     }
 
                     @Override
                     public void onTransitionStart(Transition transition) {
+                        //Start of transition, make title text invisible
                         mTitleView.setAlpha(0f);
-                       // mCollapsingToolbarLayout.setVisibility(View.INVISIBLE);
-                        Log.e(TAG, "onTransitionStart()");
                     }
                 });
             }
         }
-      //  mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
         mStatusBarColorDrawable = new ColorDrawable(0);
 
@@ -189,20 +181,6 @@ public class ArticleDetailFragment extends Fragment implements
 
         return mRootView;
     }
-
-//    private void setupStartPostponedEnterTransition() {
-//
-//        if (mStartingPosition == mStartingPosition) {
-//            mPhotoView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-//                @Override
-//                public boolean onPreDraw() {
-//                    mPhotoView.getViewTreeObserver().removeOnPreDrawListener(this);
-//                    getActivity().supportStartPostponedEnterTransition();
-//                    return true;
-//                }
-//            });
-//        }
-//    }
 
     private void updateStatusBar() {
         int color = 0;
@@ -264,25 +242,27 @@ public class ArticleDetailFragment extends Fragment implements
                                 //Setup title and byline after image has loaded
                                 String title = mCursor.getString(ArticleLoader.Query.TITLE);
                                 mTitleView.setText(title);
-
                                 mBylineView.setText(getArticleSubtitle(getActivity(),mCursor,true));
 
                                 updateStatusBar();
 
+                                //Set title and colors for collapsing toolbar
                                 mCollapsingToolbarLayout.setTitle(title);
                                 mCollapsingToolbarLayout.setExpandedTitleColor(getResources().
                                         getColor(android.R.color.transparent));
 
+                                //Set Content description for toolbar/title
+                                mCollapsingToolbarLayout.setContentDescription(title);
+
+                                //Set pallet colors when toolbar is collapsed 
                                 int primaryColor = getResources().getColor(R.color.theme_primary);
                                 int primaryDarkColor = getResources().getColor(R.color.theme_primary_dark);
                                 mCollapsingToolbarLayout.setContentScrimColor(p.getMutedColor(primaryColor));
                                 mCollapsingToolbarLayout.setStatusBarScrimColor(p.getDarkMutedColor(primaryDarkColor));
 
-                               // Log.e(TAG,"Downloaded image, start Postponed transition on " + title);
                                 //Now that we've successfully loaded the image, we can start the
                                 //shared transition.
                                 getActivity().supportStartPostponedEnterTransition();
-                              //  setupStartPostponedEnterTransition();
                             }
                         }
 
@@ -365,6 +345,13 @@ public class ArticleDetailFragment extends Fragment implements
         return view.getLocalVisibleRect(containerBounds);
     }
 
+    /**
+     * Puts together the subtitle of the article
+     * @param context calling context
+     * @param cursor cursor to the article data
+     * @param lineBreak boolean to set if there is a line break between the auther and date
+     * @return string of the subtitle
+     */
     public static Spanned getArticleSubtitle(Context context, Cursor cursor, boolean lineBreak) {
 
         String strLineBreak = " ";

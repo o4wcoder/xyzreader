@@ -183,6 +183,7 @@ public class ArticleDetailActivity extends AppCompatActivity
     /**
      * Reverses the Activity Scene entry Transition and triggers the calling Activity to
      * reverse its exit Transition. onActivityReenter in ArticleMainActivity will receive this
+     * by using "setResult"
      */
     @Override
     public void finishAfterTransition() {
@@ -227,10 +228,6 @@ public class ArticleDetailActivity extends AppCompatActivity
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         mCursor = null;
         mPagerAdapter.notifyDataSetChanged();
-    }
-
-    public void clickFAB(View view) {
-        Log.e(TAG,"clickFAB()");
     }
 
     public void onUpButtonFloorChanged(long itemId, ArticleDetailFragment fragment) {
