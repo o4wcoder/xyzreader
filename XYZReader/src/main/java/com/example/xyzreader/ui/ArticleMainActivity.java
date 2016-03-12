@@ -50,12 +50,16 @@ import java.util.Map;
 public class ArticleMainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
+    /**************************************************************************/
+    /*                             Constants                                  */
+    /**************************************************************************/
     private static final String TAG = ArticleMainActivity.class.getSimpleName();
-
     static final String EXTRA_STARTING_IMAGE_POSITION = "com.example.xyzreader.ui.extra_starting_image_position";
     static final String EXTRA_CURRENT_IMAGE_POSITION = "com.example.xyzreader.ui.extra_current_image_position";
-   // static final String EXTRA_TRANSITION_NAME = "com.example.xyzreader.ui.extra_transition_name";
 
+    /**************************************************************************/
+    /*                             Local Data                                 */
+    /**************************************************************************/
     private Toolbar mToolbar;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
@@ -113,9 +117,6 @@ public class ArticleMainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         setExitSharedElementCallback(mCallback);
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
-
-
-       // final View toolbarContainerView = findViewById(R.id.toolbar_container);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
@@ -249,16 +250,15 @@ public class ArticleMainActivity extends AppCompatActivity implements
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
-
                         DynamicHeightNetworkImageView imageView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
 
                         String transName = imageView.getTransitionName();
-                        Log.e(TAG, "OnClick() Trans name = " + transName);
+
+                        //Store starting image position and put into and extra
+                        mImagePosition = vh.getAdapterPosition();
+                        intent.putExtra(EXTRA_STARTING_IMAGE_POSITION, mImagePosition);
 
                         //Create transition when starting detail activity
-                        mImagePosition = vh.getAdapterPosition();
-                        Log.e(TAG, "onClick() Setting image position = " + mImagePosition);
-                        intent.putExtra(EXTRA_STARTING_IMAGE_POSITION, mImagePosition);
                         ActivityOptionsCompat options = ActivityOptionsCompat.
                                 makeSceneTransitionAnimation(ArticleMainActivity.this, new Pair<View, String>(imageView, transName));
 
@@ -276,13 +276,7 @@ public class ArticleMainActivity extends AppCompatActivity implements
         public void onBindViewHolder(ViewHolder holder, int position) {
             mCursor.moveToPosition(position);
             holder.titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
-            holder.subtitleView.setText(
-                    DateUtils.getRelativeTimeSpanString(
-                            mCursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
-                            System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                            DateUtils.FORMAT_ABBREV_ALL).toString()
-                            + " by "
-                            + mCursor.getString(ArticleLoader.Query.AUTHOR));
+            holder.subtitleView.setText(ArticleDetailFragment.getArticleSubtitle(ArticleMainActivity.this,mCursor,false));
 
             holder.thumbnailView.setImageUrl(
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
@@ -291,18 +285,9 @@ public class ArticleMainActivity extends AppCompatActivity implements
 
             //Set title of image to be used in the shared transition
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//              Log.e(TAG, "onBindViewHolder() Pos: " + position +
-//                      " Article title/trans name: " + mCursor.getString(ArticleLoader.Query.TITLE));
-//                holder.thumbnailView.setTransitionName(mCursor.getString(ArticleLoader.Query.TITLE));
-//                        holder.thumbnailView.setTag(mCursor.getString(ArticleLoader.Query.TITLE));
-//                mImagePosition = position;
-//            }
 
-                //holder.thumbnailView.setTransitionName(ImageLoaderHelper.
-                    //    getTransitionName(ArticleMainActivity.this, position));
                 ViewCompat.setTransitionName(holder.thumbnailView,ImageLoaderHelper.getTransitionName(ArticleMainActivity.this,position));
-               // Log.e(TAG, "onBindViewHolder() Pos: " + position +
-                //        " trans name: " + holder.thumbnailView.getTransitionName());
+                holder.thumbnailView.setTag(ImageLoaderHelper.getTransitionName(ArticleMainActivity.this,position));
             }
 
 

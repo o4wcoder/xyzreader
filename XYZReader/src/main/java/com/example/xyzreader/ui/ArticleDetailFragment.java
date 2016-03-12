@@ -1,6 +1,7 @@
 package com.example.xyzreader.ui;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -21,6 +22,7 @@ import android.support.v4.app.ShareCompat;
 import android.support.v7.graphics.Palette;
 import android.support.v7.view.CollapsibleActionView;
 import android.text.Html;
+import android.text.Spanned;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.transition.Transition;
@@ -137,24 +139,30 @@ public class ArticleDetailFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         mRootView = inflater.inflate(R.layout.fragment_detail, container, false);
-
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
-        mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(), mPagerPosition));
-       // Log.e(TAG, "onCreateView(): Photo transition name = " + mPhotoView.getTransitionName());
 
         mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
+            mPhotoView.setTransitionName(ImageLoaderHelper.getTransitionName(getActivity(), mPagerPosition));
             if(mIsTransitioning) {
-                mTitleView.setAlpha(0f);
+
                 getActivity().getWindow().getSharedElementEnterTransition().addListener(new ImageTransitionListener() {
                     @Override
                     public void onTransitionEnd(Transition transition) {
 
                         //Fade in text
                       //  Log.e(TAG, "Transition Ended. Fade in title " + mTitleView.getText());
+                        Log.e(TAG, "onTransitionEnd()");
+                      //  mCollapsingToolbarLayout.setVisibility(View.VISIBLE);
                         mTitleView.animate().setDuration(TEXT_FADE_DURATION).alpha(1f);
+                    }
+
+                    @Override
+                    public void onTransitionStart(Transition transition) {
+                        mTitleView.setAlpha(0f);
+                       // mCollapsingToolbarLayout.setVisibility(View.INVISIBLE);
+                        Log.e(TAG, "onTransitionStart()");
                     }
                 });
             }
@@ -182,19 +190,20 @@ public class ArticleDetailFragment extends Fragment implements
         return mRootView;
     }
 
-    private void setupStartPostponedEnterTransition() {
+//    private void setupStartPostponedEnterTransition() {
+//
+//        if (mStartingPosition == mStartingPosition) {
+//            mPhotoView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+//                @Override
+//                public boolean onPreDraw() {
+//                    mPhotoView.getViewTreeObserver().removeOnPreDrawListener(this);
+//                    getActivity().supportStartPostponedEnterTransition();
+//                    return true;
+//                }
+//            });
+//        }
+//    }
 
-      //  if (mAlbumPosition == mStartingPosition) {
-            mPhotoView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    mPhotoView.getViewTreeObserver().removeOnPreDrawListener(this);
-                    getActivity().supportStartPostponedEnterTransition();
-                    return true;
-                }
-            });
-       // }
-    }
     private void updateStatusBar() {
         int color = 0;
         if (mPhotoView != null && mTopInset != 0 && mScrollY > 0) {
@@ -256,13 +265,7 @@ public class ArticleDetailFragment extends Fragment implements
                                 String title = mCursor.getString(ArticleLoader.Query.TITLE);
                                 mTitleView.setText(title);
 
-                                mBylineView.setText(Html.fromHtml(" By "
-                                                + mCursor.getString(ArticleLoader.Query.AUTHOR)
-                                                + "<br>" +
-                                                DateUtils.getRelativeTimeSpanString(
-                                                mCursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
-                                                System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                                                DateUtils.FORMAT_ABBREV_ALL).toString()));
+                                mBylineView.setText(getArticleSubtitle(getActivity(),mCursor,true));
 
                                 updateStatusBar();
 
@@ -275,10 +278,11 @@ public class ArticleDetailFragment extends Fragment implements
                                 mCollapsingToolbarLayout.setContentScrimColor(p.getMutedColor(primaryColor));
                                 mCollapsingToolbarLayout.setStatusBarScrimColor(p.getDarkMutedColor(primaryDarkColor));
 
-                                Log.e(TAG,"Downloaded image, start Postponed transition on " + title);
+                               // Log.e(TAG,"Downloaded image, start Postponed transition on " + title);
                                 //Now that we've successfully loaded the image, we can start the
                                 //shared transition.
                                 getActivity().supportStartPostponedEnterTransition();
+                              //  setupStartPostponedEnterTransition();
                             }
                         }
 
@@ -359,5 +363,22 @@ public class ArticleDetailFragment extends Fragment implements
         Rect containerBounds = new Rect();
         container.getHitRect(containerBounds);
         return view.getLocalVisibleRect(containerBounds);
+    }
+
+    public static Spanned getArticleSubtitle(Context context, Cursor cursor, boolean lineBreak) {
+
+        String strLineBreak = " ";
+
+        //put in line break between name and date
+        if(lineBreak)
+            strLineBreak = "<br>";
+
+        return Html.fromHtml(context.getString(R.string.by) + " "
+                + cursor.getString(ArticleLoader.Query.AUTHOR)
+                + strLineBreak +
+                DateUtils.getRelativeTimeSpanString(
+                        cursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
+                        System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
+                        DateUtils.FORMAT_ABBREV_ALL).toString());
     }
 }
