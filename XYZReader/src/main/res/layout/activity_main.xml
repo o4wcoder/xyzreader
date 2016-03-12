@@ -17,6 +17,8 @@
                 app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
                 android:layout_marginLeft="@dimen/list_toolbar_side_margin"
                 android:layout_marginRight="@dimen/list_toolbar_side_margin"
+                android:layout_marginStart="@dimen/list_toolbar_side_margin"
+                android:layout_marginEnd="@dimen/list_toolbar_side_margin"
                 android:layout_width="match_parent"
                 android:layout_height="?actionBarSize"
                 app:layout_scrollFlags="scroll|enterAlwaysCollapsed|snap">
@@ -43,9 +45,10 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:scrollbarStyle="outsideOverlay"
-
             android:paddingLeft="@dimen/list_side_margin"
             android:paddingRight="@dimen/list_side_margin"
+            android:paddingStart="@dimen/list_side_margin"
+            android:paddingEnd="@dimen/list_side_margin"
             android:paddingBottom="28dp"
           />
     </android.support.v4.widget.SwipeRefreshLayout>
